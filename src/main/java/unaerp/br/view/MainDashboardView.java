@@ -12,13 +12,12 @@ public class MainDashboardView extends JFrame {
     private JTabbedPane tabbedPane;
     private TransactionsPanel transactionsPanel;
     private CategoriesPanel categoriesPanel;
-    private SummaryPanel summaryPanel;
 
     public MainDashboardView(User user) {
         this.currentUser = user;
 
         setTitle("Gerenciador Financeiro Pessoal - Bem-vindo(a) " + currentUser.getUsername());
-        setSize(1200, 1000);
+        setSize(1200, 800);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -32,20 +31,16 @@ public class MainDashboardView extends JFrame {
 
         transactionsPanel = new TransactionsPanel(currentUser, this);
         categoriesPanel = new CategoriesPanel(currentUser, this);
-        summaryPanel = new SummaryPanel(currentUser, this);
 
-        tabbedPane.addTab("Transações", transactionsPanel);
+        tabbedPane.addTab("Transações e Resumo", transactionsPanel);
         tabbedPane.addTab("Categorias", categoriesPanel);
-        tabbedPane.addTab("Resumo", summaryPanel);
     }
 
     private void layoutComponents() {
         JMenuBar menuBar = new JMenuBar();
-        JMenu fileMenu = new JMenu("Arquivo");
-        JMenuItem logoutMenuItem = new JMenuItem("Sair");
+        JMenu fileMenu = new JMenu("");
         JMenuItem exitMenuItem = new JMenuItem("Sair do Programa");
 
-        fileMenu.add(logoutMenuItem);
         fileMenu.addSeparator();
         fileMenu.add(exitMenuItem);
         menuBar.add(fileMenu);
@@ -53,7 +48,6 @@ public class MainDashboardView extends JFrame {
 
         add(tabbedPane);
 
-        logoutMenuItem.addActionListener(e -> performLogout());
         exitMenuItem.addActionListener(e -> System.exit(0));
     }
 
@@ -63,7 +57,6 @@ public class MainDashboardView extends JFrame {
             public void windowClosing(WindowEvent e) {
                 transactionsPanel.closeResources();
                 categoriesPanel.closeResources();
-                summaryPanel.closeResources();
                 System.out.println("MainDashboardView fechada, recursos dos painéis devem ser liberados.");
             }
         });
@@ -72,7 +65,6 @@ public class MainDashboardView extends JFrame {
     private void performLogout() {
         transactionsPanel.closeResources();
         categoriesPanel.closeResources();
-        summaryPanel.closeResources();
 
         this.dispose();
         LoginView loginView = new LoginView();

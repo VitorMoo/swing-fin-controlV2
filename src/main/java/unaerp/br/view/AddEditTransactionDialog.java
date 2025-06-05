@@ -128,7 +128,7 @@ public class AddEditTransactionDialog extends JDialog {
             if (categories.isEmpty()) {
                 categoryComboBox.addItem(new CategoryWrapper(null, "Nenhuma categoria cadastrada"));
                 categoryComboBox.setEnabled(false);
-                saveButton.setEnabled(false); // Impede salvar sem categoria
+                saveButton.setEnabled(false);
                 JOptionPane.showMessageDialog(this, "Não há categorias cadastradas. Por favor, cadastre uma categoria primeiro.", "Aviso", JOptionPane.WARNING_MESSAGE);
             } else {
                 for (Category cat : categories) {
@@ -158,9 +158,8 @@ public class AddEditTransactionDialog extends JDialog {
         } else {
             dateField.setText(LocalDate.now().format(dateFormatter));
             if (categoryComboBox.getItemCount() > 0 && categoryComboBox.getItemAt(0).getCategory() == null) {
-                // Se a única opção é "Nenhuma categoria", mantém desabilitado
             } else if (categoryComboBox.getItemCount() > 0) {
-                categoryComboBox.setSelectedIndex(0); // Seleciona a primeira categoria por padrão
+                categoryComboBox.setSelectedIndex(0);
             }
         }
     }

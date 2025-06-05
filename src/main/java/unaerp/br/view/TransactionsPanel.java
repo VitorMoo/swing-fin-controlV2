@@ -1,7 +1,9 @@
 package unaerp.br.view;
 
 import unaerp.br.controller.CategoryController;
+import unaerp.br.controller.FinancialSummaryController;
 import unaerp.br.controller.TransactionController;
+import unaerp.br.model.dto.FinancialSummary;
 import unaerp.br.model.entity.Category;
 import unaerp.br.model.entity.Transaction;
 import unaerp.br.model.entity.User;
@@ -11,10 +13,12 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
+import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -37,10 +41,17 @@ public class TransactionsPanel extends JPanel {
 
     private TransactionController transactionController;
     private CategoryController categoryController;
+    private FinancialSummaryController summaryController;
 
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final NumberFormat currencyFormatter = NumberFormat.getCurrencyInstance(new Locale("pt", "BR"));
     private final CategoryWrapper ALL_CATEGORIES_OPTION = new CategoryWrapper(null, "-- Todas as Categorias --");
     private final TransactionTypeWrapper ALL_TYPES_OPTION = new TransactionTypeWrapper(null, "-- Todos os Tipos --");
+
+    private JLabel totalIncomeLabel;
+    private JLabel totalExpenseLabel;
+    private JLabel balanceLabel;
+    private JPanel summaryDisplayPanel;
 
 
     public TransactionsPanel(User user, JFrame owner) {
@@ -48,16 +59,19 @@ public class TransactionsPanel extends JPanel {
         this.ownerFrame = owner;
         this.transactionController = new TransactionController();
         this.categoryController = new CategoryController();
+        this.summaryController = new FinancialSummaryController();
 
         setLayout(new BorderLayout(10, 10));
         initComponents();
         createFilterPanel();
+        createSummaryDisplayPanel();
         layoutComponents();
         attachListeners();
 
+        setDefaultDatesForFilters();
         populateCategoryFilter();
         populateTypeFilter();
-        loadTransactions();
+        loadTransactionsAndSummary();
     }
 
     private void initComponents() {
@@ -93,11 +107,27 @@ public class TransactionsPanel extends JPanel {
         typeFilterComboBox = new JComboBox<>();
         applyFiltersButton = new JButton("Aplicar Filtros");
         resetFiltersButton = new JButton("Limpar Filtros");
+
+        Font summaryFont = new Font("Arial", Font.BOLD, 14);
+        totalIncomeLabel = new JLabel("Receitas: R$ 0,00");
+        totalIncomeLabel.setFont(summaryFont);
+        totalExpenseLabel = new JLabel("Despesas: R$ 0,00");
+        totalExpenseLabel.setFont(summaryFont);
+        balanceLabel = new JLabel("Saldo: R$ 0,00");
+        balanceLabel.setFont(summaryFont);
+    }
+
+    private void setDefaultDatesForFilters() {
+        LocalDate today = LocalDate.now();
+        LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+
+        startDateField.setText(firstDayOfMonth.format(dateFormatter));
+        endDateField.setText(today.format(dateFormatter));
     }
 
     private void createFilterPanel() {
         JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 5));
-        filterPanel.setBorder(BorderFactory.createTitledBorder("Filtros"));
+        filterPanel.setBorder(BorderFactory.createTitledBorder("Filtros e Período do Resumo"));
 
         filterPanel.add(new JLabel("Data Inicial:"));
         filterPanel.add(startDateField);
@@ -111,6 +141,14 @@ public class TransactionsPanel extends JPanel {
         filterPanel.add(resetFiltersButton);
 
         add(filterPanel, BorderLayout.NORTH);
+    }
+
+    private void createSummaryDisplayPanel() {
+        summaryDisplayPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 5));
+        summaryDisplayPanel.setBorder(BorderFactory.createTitledBorder("Resumo do Período Selecionado"));
+        summaryDisplayPanel.add(totalIncomeLabel);
+        summaryDisplayPanel.add(totalExpenseLabel);
+        summaryDisplayPanel.add(balanceLabel);
     }
 
     private void populateCategoryFilter() {
@@ -132,16 +170,20 @@ public class TransactionsPanel extends JPanel {
         }
     }
 
-
     private void layoutComponents() {
         JScrollPane scrollPane = new JScrollPane(transactionTable);
         add(scrollPane, BorderLayout.CENTER);
+
+        JPanel southOuterPanel = new JPanel(new BorderLayout(5,5));
+        southOuterPanel.add(summaryDisplayPanel, BorderLayout.NORTH);
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.add(addButton);
         buttonPanel.add(editButton);
         buttonPanel.add(deleteButton);
-        add(buttonPanel, BorderLayout.SOUTH);
+        southOuterPanel.add(buttonPanel, BorderLayout.CENTER);
+
+        add(southOuterPanel, BorderLayout.SOUTH);
 
         setBorder(BorderFactory.createEmptyBorder(5, 10, 10, 10));
     }
@@ -170,17 +212,21 @@ public class TransactionsPanel extends JPanel {
             }
         });
 
-        applyFiltersButton.addActionListener(e -> loadTransactions());
+        applyFiltersButton.addActionListener(e -> loadTransactionsAndSummary());
         resetFiltersButton.addActionListener(e -> {
-            startDateField.setText("");
-            endDateField.setText("");
+            setDefaultDatesForFilters();
             categoryFilterComboBox.setSelectedItem(ALL_CATEGORIES_OPTION);
             typeFilterComboBox.setSelectedItem(ALL_TYPES_OPTION);
-            loadTransactions();
+            loadTransactionsAndSummary();
         });
     }
 
-    public void loadTransactions() {
+    public void loadTransactionsAndSummary() {
+        loadTransactions();
+        updateSummaryDisplay();
+    }
+
+    private void loadTransactions() {
         tableModel.setRowCount(0);
         List<Transaction> transactions;
 
@@ -218,6 +264,16 @@ public class TransactionsPanel extends JPanel {
         try {
             if (startDate != null && endDate != null) {
                 transactions = transactionController.getTransactionsByUserAndDateRange(currentUser, startDate, endDate);
+            } else if (startDate != null) {
+                LocalDate finalStartDate = startDate;
+                transactions = transactionController.getTransactionsByUser(currentUser).stream()
+                        .filter(t -> !t.getTransactionDate().isBefore(finalStartDate))
+                        .collect(Collectors.toList());
+            } else if (endDate != null) {
+                LocalDate finalEndDate = endDate;
+                transactions = transactionController.getTransactionsByUser(currentUser).stream()
+                        .filter(t -> !t.getTransactionDate().isAfter(finalEndDate))
+                        .collect(Collectors.toList());
             } else {
                 transactions = transactionController.getTransactionsByUser(currentUser);
             }
@@ -236,20 +292,6 @@ public class TransactionsPanel extends JPanel {
                         .collect(Collectors.toList());
             }
 
-            if (startDate != null && (endDate == null && (selectedCategory != null || selectedType != null))) {
-                final LocalDate finalStartDate = startDate;
-                transactions = transactions.stream()
-                        .filter(t -> !t.getTransactionDate().isBefore(finalStartDate))
-                        .collect(Collectors.toList());
-            }
-            if (endDate != null && (startDate == null && (selectedCategory != null || selectedType != null))) {
-                final LocalDate finalEndDate = endDate;
-                transactions = transactions.stream()
-                        .filter(t -> !t.getTransactionDate().isAfter(finalEndDate))
-                        .collect(Collectors.toList());
-            }
-
-
             for (Transaction tx : transactions) {
                 tableModel.addRow(new Object[]{
                         tx.getId(),
@@ -266,11 +308,64 @@ public class TransactionsPanel extends JPanel {
         }
     }
 
+    private void updateSummaryDisplay() {
+        LocalDate startDate = null;
+        LocalDate endDate = null;
+
+        try {
+            if (!startDateField.getText().trim().isEmpty()) {
+                startDate = LocalDate.parse(startDateField.getText().trim(), dateFormatter);
+            }
+            if (!endDateField.getText().trim().isEmpty()) {
+                endDate = LocalDate.parse(endDateField.getText().trim(), dateFormatter);
+            }
+
+            if (startDate == null || endDate == null) {
+                totalIncomeLabel.setText("Receitas: " + currencyFormatter.format(0));
+                totalExpenseLabel.setText("Despesas: " + currencyFormatter.format(0));
+                balanceLabel.setText("Saldo: " + currencyFormatter.format(0));
+                balanceLabel.setForeground(Color.BLACK);
+                return;
+            }
+
+            if (endDate.isBefore(startDate)) {
+                JOptionPane.showMessageDialog(ownerFrame, "Data final do resumo não pode ser anterior à data inicial.", "Erro de Data do Resumo", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            FinancialSummary summary = summaryController.getFinancialSummary(currentUser, startDate, endDate);
+            totalIncomeLabel.setText("Receitas: " + currencyFormatter.format(summary.getTotalIncome()));
+            totalExpenseLabel.setText("Despesas: " + currencyFormatter.format(summary.getTotalExpense()));
+            balanceLabel.setText("Saldo: " + currencyFormatter.format(summary.getBalance()));
+
+            if (summary.getBalance().compareTo(java.math.BigDecimal.ZERO) < 0) {
+                balanceLabel.setForeground(Color.RED);
+            } else {
+                balanceLabel.setForeground(new Color(0, 100, 0));
+            }
+
+        } catch (DateTimeParseException ex) {
+            totalIncomeLabel.setText("Receitas: (data inválida)");
+            totalExpenseLabel.setText("Despesas: (data inválida)");
+            balanceLabel.setText("Saldo: (data inválida)");
+            balanceLabel.setForeground(Color.ORANGE);
+        }
+        catch (Exception e) {
+            JOptionPane.showMessageDialog(ownerFrame, "Erro ao gerar resumo: " + e.getMessage(), "Erro no Resumo", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
+            totalIncomeLabel.setText("Receitas: Erro");
+            totalExpenseLabel.setText("Despesas: Erro");
+            balanceLabel.setText("Saldo: Erro");
+            balanceLabel.setForeground(Color.RED);
+        }
+    }
+
+
     private void openAddEditTransactionDialog(Transaction transactionToEdit) {
         AddEditTransactionDialog dialog = new AddEditTransactionDialog(ownerFrame, transactionController, currentUser, transactionToEdit);
         dialog.setVisible(true);
         if (dialog.isSaved()) {
-            loadTransactions();
+            loadTransactionsAndSummary();
         }
     }
 
@@ -290,7 +385,7 @@ public class TransactionsPanel extends JPanel {
                 boolean success = transactionController.deleteTransaction(transactionId, currentUser);
                 if (success) {
                     JOptionPane.showMessageDialog(ownerFrame, "Transação excluída com sucesso.", "Sucesso", JOptionPane.INFORMATION_MESSAGE);
-                    loadTransactions();
+                    loadTransactionsAndSummary();
                 } else {
                     JOptionPane.showMessageDialog(ownerFrame, "Não foi possível excluir a transação.", "Falha na Exclusão", JOptionPane.ERROR_MESSAGE);
                 }
@@ -309,6 +404,10 @@ public class TransactionsPanel extends JPanel {
         if (categoryController != null) {
             categoryController.close();
             System.out.println("TransactionsPanel fechado, recursos do CategoryController (para filtro) liberados.");
+        }
+        if (summaryController != null) {
+            summaryController.close();
+            System.out.println("TransactionsPanel fechado, recursos do FinancialSummaryController liberados.");
         }
     }
 

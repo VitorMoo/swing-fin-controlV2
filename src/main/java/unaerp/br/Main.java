@@ -1,7 +1,7 @@
 package unaerp.br;
 
 import unaerp.br.config.HibernateUtil;
-import unaerp.br.view.LoginView; // Assuming LoginView is created in a 'view' package
+import unaerp.br.view.LoginView;
 import javax.swing.SwingUtilities;
 import javax.swing.JOptionPane;
 
