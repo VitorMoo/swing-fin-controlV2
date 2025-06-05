@@ -5,11 +5,7 @@ import unaerp.br.model.entity.Category;
 import unaerp.br.model.entity.User;
 
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.util.List;
 
 public class CategoriesPanel extends JPanel {
@@ -146,6 +142,8 @@ public class CategoriesPanel extends JPanel {
         private Category category;
         public CategoryWrapper(Category category) { this.category = category; }
         public Category getCategory() { return category; }
-        @Override public String toString() { return category.getName(); }
+        @Override public String toString() {
+            return category.getName() + " (" + category.getTransactionType().getDisplayName() + ")";
+        }
     }
 }

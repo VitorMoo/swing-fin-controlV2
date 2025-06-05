@@ -9,6 +9,7 @@ import unaerp.br.model.enums.TransactionType;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ItemEvent;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
@@ -48,8 +49,8 @@ public class AddEditTransactionDialog extends JDialog {
 
         initComponents();
         layoutComponents();
-        populateFields();
         attachListeners();
+        populateFields();
     }
 
     private void initComponents() {
@@ -123,29 +124,12 @@ public class AddEditTransactionDialog extends JDialog {
 
 
     private void populateFields() {
-        try {
-            List<Category> categories = categoryController.getCategoriesByUser(currentUser);
-            if (categories.isEmpty()) {
-                categoryComboBox.addItem(new CategoryWrapper(null, "Nenhuma categoria cadastrada"));
-                categoryComboBox.setEnabled(false);
-                saveButton.setEnabled(false);
-                JOptionPane.showMessageDialog(this, "Não há categorias cadastradas. Por favor, cadastre uma categoria primeiro.", "Aviso", JOptionPane.WARNING_MESSAGE);
-            } else {
-                for (Category cat : categories) {
-                    categoryComboBox.addItem(new CategoryWrapper(cat));
-                }
-            }
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Erro ao carregar categorias: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
-            e.printStackTrace();
-        }
-
         if (transactionToEdit != null) {
             descriptionField.setText(transactionToEdit.getDescription());
             amountField.setValue(transactionToEdit.getAmount());
             typeComboBox.setSelectedItem(transactionToEdit.getTransactionType());
             dateField.setText(transactionToEdit.getTransactionDate().format(dateFormatter));
-
+            populateCategoryComboBox(transactionToEdit.getTransactionType());
             if (transactionToEdit.getCategory() != null) {
                 for (int i = 0; i < categoryComboBox.getItemCount(); i++) {
                     CategoryWrapper wrapper = categoryComboBox.getItemAt(i);
@@ -157,10 +141,28 @@ public class AddEditTransactionDialog extends JDialog {
             }
         } else {
             dateField.setText(LocalDate.now().format(dateFormatter));
-            if (categoryComboBox.getItemCount() > 0 && categoryComboBox.getItemAt(0).getCategory() == null) {
-            } else if (categoryComboBox.getItemCount() > 0) {
-                categoryComboBox.setSelectedIndex(0);
+            populateCategoryComboBox((TransactionType) typeComboBox.getSelectedItem());
+        }
+    }
+
+    private void populateCategoryComboBox(TransactionType type) {
+        categoryComboBox.removeAllItems();
+        try {
+            List<Category> categories = categoryController.getCategoriesByUserAndType(currentUser, type);
+            if (categories.isEmpty()) {
+                categoryComboBox.addItem(new CategoryWrapper(null, "Nenhuma categoria para este tipo"));
+                categoryComboBox.setEnabled(false);
+                saveButton.setEnabled(false);
+            } else {
+                for (Category cat : categories) {
+                    categoryComboBox.addItem(new CategoryWrapper(cat));
+                }
+                categoryComboBox.setEnabled(true);
+                saveButton.setEnabled(true);
             }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "Erro ao carregar categorias: " + e.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }
 
@@ -171,6 +173,12 @@ public class AddEditTransactionDialog extends JDialog {
                 categoryController.close();
             }
             dispose();
+        });
+
+        typeComboBox.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                populateCategoryComboBox((TransactionType) e.getItem());
+            }
         });
 
         this.addWindowListener(new java.awt.event.WindowAdapter() {
@@ -239,8 +247,7 @@ public class AddEditTransactionDialog extends JDialog {
             if (transactionToEdit == null) {
                 success = transactionController.addTransaction(description, amount, type, transactionDate, selectedCategory, currentUser);
             } else {
-                transactionToEdit.setTransactionType(type);
-                success = transactionController.updateTransaction(transactionToEdit.getId(), description, amount, transactionDate, selectedCategory, currentUser);
+                success = transactionController.updateTransaction(transactionToEdit.getId(), description, amount, type, transactionDate, selectedCategory, currentUser);
             }
 
             if (success) {

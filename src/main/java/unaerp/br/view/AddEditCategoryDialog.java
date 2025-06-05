@@ -3,14 +3,14 @@ package unaerp.br.view;
 import unaerp.br.controller.CategoryController;
 import unaerp.br.model.entity.Category;
 import unaerp.br.model.entity.User;
+import unaerp.br.model.enums.TransactionType;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 
 public class AddEditCategoryDialog extends JDialog {
     private JTextField nameField;
+    private JComboBox<TransactionType> typeComboBox;
     private JButton saveButton;
     private JButton cancelButton;
 
@@ -25,7 +25,7 @@ public class AddEditCategoryDialog extends JDialog {
         this.currentUser = user;
         this.categoryToEdit = category;
 
-        setSize(350, 150);
+        setSize(400, 200);
         setLocationRelativeTo(owner);
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 
@@ -35,11 +35,13 @@ public class AddEditCategoryDialog extends JDialog {
 
         if (categoryToEdit != null) {
             nameField.setText(categoryToEdit.getName());
+            typeComboBox.setSelectedItem(categoryToEdit.getTransactionType());
         }
     }
 
     private void initComponents() {
         nameField = new JTextField(20);
+        typeComboBox = new JComboBox<>(TransactionType.values());
         saveButton = new JButton("Salvar");
         cancelButton = new JButton("Cancelar");
     }
@@ -57,12 +59,19 @@ public class AddEditCategoryDialog extends JDialog {
         gbc.gridx = 1;
         panel.add(nameField, gbc);
 
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(new JLabel("Tipo de Transação:"), gbc);
+
+        gbc.gridx = 1;
+        panel.add(typeComboBox, gbc);
+
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         buttonPanel.add(saveButton);
         buttonPanel.add(cancelButton);
 
         gbc.gridx = 0;
-        gbc.gridy = 1;
+        gbc.gridy = 2;
         gbc.gridwidth = 2;
         panel.add(buttonPanel, gbc);
 
@@ -81,12 +90,14 @@ public class AddEditCategoryDialog extends JDialog {
             return;
         }
 
+        TransactionType selectedType = (TransactionType) typeComboBox.getSelectedItem();
+
         boolean success;
         try {
             if (categoryToEdit == null) {
-                success = categoryController.addCategory(name, currentUser);
+                success = categoryController.addCategory(name, selectedType, currentUser);
             } else {
-                success = categoryController.updateCategory(categoryToEdit.getId(), name, currentUser);
+                success = categoryController.updateCategory(categoryToEdit.getId(), name, selectedType, currentUser);
             }
 
             if (success) {
@@ -94,7 +105,7 @@ public class AddEditCategoryDialog extends JDialog {
                 JOptionPane.showMessageDialog(this, "Categoria salva!", "Successo", JOptionPane.INFORMATION_MESSAGE);
                 dispose();
             } else {
-                JOptionPane.showMessageDialog(this, "Erro ao salvar.", "Salvar falhou", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Erro ao salvar. Verifique se já não existe uma categoria com este nome.", "Salvar falhou", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Erro ao salvar a categoria: " + ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);

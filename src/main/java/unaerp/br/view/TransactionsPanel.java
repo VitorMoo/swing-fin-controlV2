@@ -13,6 +13,7 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableColumnModel;
 import java.awt.*;
+import java.awt.event.ItemEvent;
 import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -69,8 +70,8 @@ public class TransactionsPanel extends JPanel {
         attachListeners();
 
         setDefaultDatesForFilters();
-        populateCategoryFilter();
         populateTypeFilter();
+        populateCategoryFilter();
         loadTransactionsAndSummary();
     }
 
@@ -133,10 +134,10 @@ public class TransactionsPanel extends JPanel {
         filterPanel.add(startDateField);
         filterPanel.add(new JLabel("Data Final:"));
         filterPanel.add(endDateField);
-        filterPanel.add(new JLabel("Categoria:"));
-        filterPanel.add(categoryFilterComboBox);
         filterPanel.add(new JLabel("Tipo:"));
         filterPanel.add(typeFilterComboBox);
+        filterPanel.add(new JLabel("Categoria:"));
+        filterPanel.add(categoryFilterComboBox);
         filterPanel.add(applyFiltersButton);
         filterPanel.add(resetFiltersButton);
 
@@ -152,9 +153,20 @@ public class TransactionsPanel extends JPanel {
     }
 
     private void populateCategoryFilter() {
+        categoryFilterComboBox.removeAllItems();
         categoryFilterComboBox.addItem(ALL_CATEGORIES_OPTION);
+
+        TransactionTypeWrapper selectedTypeWrapper = (TransactionTypeWrapper) typeFilterComboBox.getSelectedItem();
+        TransactionType selectedType = (selectedTypeWrapper != null) ? selectedTypeWrapper.getType() : null;
+
         try {
-            List<Category> categories = categoryController.getCategoriesByUser(currentUser);
+            List<Category> categories;
+            if (selectedType != null) {
+                categories = categoryController.getCategoriesByUserAndType(currentUser, selectedType);
+            } else {
+                categories = categoryController.getCategoriesByUser(currentUser);
+            }
+
             for (Category cat : categories) {
                 categoryFilterComboBox.addItem(new CategoryWrapper(cat, cat.getName()));
             }
@@ -164,6 +176,7 @@ public class TransactionsPanel extends JPanel {
     }
 
     private void populateTypeFilter() {
+        typeFilterComboBox.removeAllItems();
         typeFilterComboBox.addItem(ALL_TYPES_OPTION);
         for (TransactionType type : TransactionType.values()) {
             typeFilterComboBox.addItem(new TransactionTypeWrapper(type, type.getDisplayName()));
@@ -212,11 +225,18 @@ public class TransactionsPanel extends JPanel {
             }
         });
 
+        typeFilterComboBox.addItemListener(e -> {
+            if (e.getStateChange() == ItemEvent.SELECTED) {
+                populateCategoryFilter();
+            }
+        });
+
         applyFiltersButton.addActionListener(e -> loadTransactionsAndSummary());
         resetFiltersButton.addActionListener(e -> {
             setDefaultDatesForFilters();
-            categoryFilterComboBox.setSelectedItem(ALL_CATEGORIES_OPTION);
             typeFilterComboBox.setSelectedItem(ALL_TYPES_OPTION);
+            populateCategoryFilter();
+            categoryFilterComboBox.setSelectedItem(ALL_CATEGORIES_OPTION);
             loadTransactionsAndSummary();
         });
     }
