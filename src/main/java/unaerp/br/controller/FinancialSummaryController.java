@@ -29,6 +29,8 @@ public class FinancialSummaryController {
             return new FinancialSummary(BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
         }
 
+        this.entityManager.clear();
+
         List<Transaction> transactions;
         try {
             transactions = transactionDao.findByUserAndDateRange(currentUser, startDate, endDate);

@@ -74,8 +74,9 @@ public class TransactionDao {
     public List<Transaction> findByUser(User user) {
         try {
             TypedQuery<Transaction> query = entityManager.createQuery(
-                "SELECT t FROM Transaction t WHERE t.user = :user ORDER BY t.date DESC",
-                Transaction.class
+                    // CORREÇÃO AQUI: t.date -> t.transactionDate
+                    "SELECT t FROM Transaction t WHERE t.user = :user ORDER BY t.transactionDate DESC",
+                    Transaction.class
             );
             query.setParameter("user", user);
             return query.getResultList();
@@ -88,8 +89,9 @@ public class TransactionDao {
     public List<Transaction> findByUserAndDateRange(User user, LocalDate startDate, LocalDate endDate) {
         try {
             TypedQuery<Transaction> query = entityManager.createQuery(
-                "SELECT t FROM Transaction t WHERE t.user = :user AND t.date BETWEEN :startDate AND :endDate ORDER BY t.date DESC",
-                Transaction.class
+                    // CORREÇÃO AQUI: t.date -> t.transactionDate
+                    "SELECT t FROM Transaction t WHERE t.user = :user AND t.transactionDate BETWEEN :startDate AND :endDate ORDER BY t.transactionDate DESC",
+                    Transaction.class
             );
             query.setParameter("user", user);
             query.setParameter("startDate", startDate);
@@ -104,8 +106,9 @@ public class TransactionDao {
     public List<Transaction> findByUserAndCategory(User user, Category category) {
         try {
             TypedQuery<Transaction> query = entityManager.createQuery(
-                "SELECT t FROM Transaction t WHERE t.user = :user AND t.category = :category ORDER BY t.date DESC",
-                Transaction.class
+                    // CORREÇÃO AQUI: t.date -> t.transactionDate
+                    "SELECT t FROM Transaction t WHERE t.user = :user AND t.category = :category ORDER BY t.transactionDate DESC",
+                    Transaction.class
             );
             query.setParameter("user", user);
             query.setParameter("category", category);
@@ -116,11 +119,20 @@ public class TransactionDao {
         }
     }
 
+    // No arquivo original, este método não existe, mas se existisse um findByUserAndType,
+    // ele também precisaria da correção. Vou adicionar o método como estava no seu TransactionDao,
+    // assumindo que o campo type também deveria ser transactionType se estivesse em uma query.
+    // O método original TransactionDao.java que você forneceu tem um 'findByUserAndType'
+    // que se refere a t.type, que no Transaction.java é 'transactionType'.
+    // A query está escrita como "t.type" e o campo na entidade Transaction é "transactionType".
+    // Esta query também precisa de correção para o nome do campo.
     public List<Transaction> findByUserAndType(User user, TransactionType type) {
         try {
             TypedQuery<Transaction> query = entityManager.createQuery(
-                "SELECT t FROM Transaction t WHERE t.user = :user AND t.type = :type ORDER BY t.date DESC",
-                Transaction.class
+                    // CORREÇÃO AQUI: t.date -> t.transactionDate
+                    // E t.type -> t.transactionType
+                    "SELECT t FROM Transaction t WHERE t.user = :user AND t.transactionType = :type ORDER BY t.transactionDate DESC",
+                    Transaction.class
             );
             query.setParameter("user", user);
             query.setParameter("type", type);

@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 import unaerp.br.model.entity.Category;
 import unaerp.br.model.entity.User;
+import unaerp.br.model.enums.TransactionType;
 
 import java.util.List;
 import java.util.Optional;
@@ -71,8 +72,8 @@ public class CategoryDao {
     public List<Category> findByUser(User user) {
         try {
             TypedQuery<Category> query = entityManager.createQuery(
-                "SELECT c FROM Category c WHERE c.user = :user ORDER BY c.name",
-                Category.class
+                    "SELECT c FROM Category c WHERE c.user = :user ORDER BY c.name",
+                    Category.class
             );
             query.setParameter("user", user);
             return query.getResultList();
@@ -82,11 +83,26 @@ public class CategoryDao {
         }
     }
 
+    public List<Category> findByUserAndType(User user, TransactionType type) {
+        try {
+            TypedQuery<Category> query = entityManager.createQuery(
+                    "SELECT c FROM Category c WHERE c.user = :user AND c.transactionType = :type ORDER BY c.name",
+                    Category.class
+            );
+            query.setParameter("user", user);
+            query.setParameter("type", type);
+            return query.getResultList();
+        } catch (Exception e) {
+            System.err.println("Erro ao buscar categorias do usuário por tipo: " + e.getMessage());
+            throw e;
+        }
+    }
+
     public Optional<Category> findByNameAndUser(String name, User user) {
         try {
             TypedQuery<Category> query = entityManager.createQuery(
-                "SELECT c FROM Category c WHERE c.name = :name AND c.user = :user",
-                Category.class
+                    "SELECT c FROM Category c WHERE c.name = :name AND c.user = :user",
+                    Category.class
             );
             query.setParameter("name", name);
             query.setParameter("user", user);
