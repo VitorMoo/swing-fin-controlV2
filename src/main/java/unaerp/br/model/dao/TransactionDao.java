@@ -74,8 +74,8 @@ public class TransactionDao {
     public List<Transaction> findByUser(User user) {
         try {
             TypedQuery<Transaction> query = entityManager.createQuery(
-                "SELECT t FROM Transaction t WHERE t.user = :user ORDER BY t.date DESC",
-                Transaction.class
+                    "SELECT t FROM Transaction t WHERE t.user = :user ORDER BY t.transactionDate DESC",
+                    Transaction.class
             );
             query.setParameter("user", user);
             return query.getResultList();
@@ -88,8 +88,8 @@ public class TransactionDao {
     public List<Transaction> findByUserAndDateRange(User user, LocalDate startDate, LocalDate endDate) {
         try {
             TypedQuery<Transaction> query = entityManager.createQuery(
-                "SELECT t FROM Transaction t WHERE t.user = :user AND t.date BETWEEN :startDate AND :endDate ORDER BY t.date DESC",
-                Transaction.class
+                    "SELECT t FROM Transaction t WHERE t.user = :user AND t.transactionDate BETWEEN :startDate AND :endDate ORDER BY t.transactionDate DESC",
+                    Transaction.class
             );
             query.setParameter("user", user);
             query.setParameter("startDate", startDate);
@@ -104,29 +104,14 @@ public class TransactionDao {
     public List<Transaction> findByUserAndCategory(User user, Category category) {
         try {
             TypedQuery<Transaction> query = entityManager.createQuery(
-                "SELECT t FROM Transaction t WHERE t.user = :user AND t.category = :category ORDER BY t.date DESC",
-                Transaction.class
+                    "SELECT t FROM Transaction t WHERE t.user = :user AND t.category = :category ORDER BY t.transactionDate DESC",
+                    Transaction.class
             );
             query.setParameter("user", user);
             query.setParameter("category", category);
             return query.getResultList();
         } catch (Exception e) {
             System.err.println("Erro ao buscar transações por categoria: " + e.getMessage());
-            throw e;
-        }
-    }
-
-    public List<Transaction> findByUserAndType(User user, TransactionType type) {
-        try {
-            TypedQuery<Transaction> query = entityManager.createQuery(
-                "SELECT t FROM Transaction t WHERE t.user = :user AND t.type = :type ORDER BY t.date DESC",
-                Transaction.class
-            );
-            query.setParameter("user", user);
-            query.setParameter("type", type);
-            return query.getResultList();
-        } catch (Exception e) {
-            System.err.println("Erro ao buscar transações por tipo: " + e.getMessage());
             throw e;
         }
     }

@@ -1,6 +1,8 @@
 package unaerp.br.model.entity;
 
 import jakarta.persistence.*;
+import unaerp.br.model.enums.TransactionType;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -15,6 +17,10 @@ public class Category {
     @Column(name = "name", nullable = false, length = 100)
     private String name;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transaction_type", nullable = false, length = 20)
+    private TransactionType transactionType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
@@ -25,12 +31,9 @@ public class Category {
     public Category() {
     }
 
-    public Category(String name) {
+    public Category(String name, TransactionType transactionType, User user) {
         this.name = name;
-    }
-
-    public Category(String name, User user) {
-        this.name = name;
+        this.transactionType = transactionType;
         this.user = user;
     }
 
@@ -48,6 +51,14 @@ public class Category {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public TransactionType getTransactionType() {
+        return transactionType;
+    }
+
+    public void setTransactionType(TransactionType transactionType) {
+        this.transactionType = transactionType;
     }
 
     public User getUser() {
@@ -71,14 +82,12 @@ public class Category {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Category category = (Category) o;
-        return Objects.equals(id, category.id) &&
-                Objects.equals(name, category.name) &&
-                Objects.equals(user, category.user);
+        return Objects.equals(id, category.id);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, name, user);
+        return Objects.hash(id);
     }
 
     @Override
@@ -86,6 +95,7 @@ public class Category {
         return "Category{" +
                 "id=" + id +
                 ", name='" + name + '\'' +
+                ", transactionType=" + transactionType +
                 ", userId=" + (user != null ? user.getId() : "null") +
                 '}';
     }

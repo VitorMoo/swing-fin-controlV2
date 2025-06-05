@@ -4,6 +4,7 @@ import unaerp.br.config.HibernateUtil;
 import unaerp.br.model.dao.CategoryDao;
 import unaerp.br.model.entity.Category;
 import unaerp.br.model.entity.User;
+import unaerp.br.model.enums.TransactionType;
 import jakarta.persistence.EntityManager;
 
 import java.util.Collections;
@@ -20,8 +21,8 @@ public class CategoryController {
         this.categoryDao = new CategoryDao(this.entityManager);
     }
 
-    public boolean addCategory(String name, User currentUser) {
-        if (name == null || name.trim().isEmpty() || currentUser == null) {
+    public boolean addCategory(String name, TransactionType transactionType, User currentUser) {
+        if (name == null || name.trim().isEmpty() || transactionType == null || currentUser == null) {
             return false;
         }
 
@@ -29,7 +30,7 @@ public class CategoryController {
             return false;
         }
 
-        Category newCategory = new Category(name, currentUser);
+        Category newCategory = new Category(name, transactionType, currentUser);
         try {
             categoryDao.save(newCategory);
             return true;
@@ -39,8 +40,8 @@ public class CategoryController {
         }
     }
 
-    public boolean updateCategory(Long categoryId, String newName, User currentUser) {
-        if (categoryId == null || newName == null || newName.trim().isEmpty() || currentUser == null) {
+    public boolean updateCategory(Long categoryId, String newName, TransactionType transactionType, User currentUser) {
+        if (categoryId == null || newName == null || newName.trim().isEmpty() || transactionType == null || currentUser == null) {
             return false;
         }
 
@@ -49,12 +50,14 @@ public class CategoryController {
             return false;
         }
 
-        if (categoryDao.findByNameAndUser(newName, currentUser).isPresent()) {
+        Category category = categoryOpt.get();
+
+        if (!category.getName().equals(newName) && categoryDao.findByNameAndUser(newName, currentUser).isPresent()) {
             return false;
         }
 
-        Category category = categoryOpt.get();
         category.setName(newName);
+        category.setTransactionType(transactionType);
         try {
             categoryDao.update(category);
             return true;
@@ -100,15 +103,16 @@ public class CategoryController {
         }
     }
 
-    public Optional<Category> getCategoryByIdAndUser(Long id, User currentUser) {
-        if (id == null || currentUser == null) {
-            return Optional.empty();
+    public List<Category> getCategoriesByUserAndType(User currentUser, TransactionType type) {
+        if (currentUser == null || type == null) {
+            return Collections.emptyList();
         }
-        Optional<Category> categoryOpt = categoryDao.findById(id);
-        if (categoryOpt.isPresent() && categoryOpt.get().getUser().getId().equals(currentUser.getId())) {
-            return categoryOpt;
+        try {
+            return categoryDao.findByUserAndType(currentUser, type);
+        } catch (Exception e) {
+            System.err.println("Erro ao buscar categorias por tipo para o usuário " + currentUser.getUsername() + ": " + e.getMessage());
+            return Collections.emptyList();
         }
-        return Optional.empty();
     }
 
     public void close() {

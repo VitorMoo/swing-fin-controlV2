@@ -79,19 +79,4 @@ public class UserDao {
             throw e;
         }
     }
-
-    public Optional<User> findByUsernameAndPassword(String username, String password) {
-        try {
-            TypedQuery<User> query = entityManager.createQuery(
-                "SELECT u FROM User u WHERE u.username = :username AND u.password = :password",
-                User.class
-            );
-            query.setParameter("username", username);
-            query.setParameter("password", password);
-            return query.getResultList().stream().findFirst();
-        } catch (Exception e) {
-            System.err.println("Erro ao buscar usuário por nome e senha: " + e.getMessage());
-            throw e;
-        }
-    }
 }

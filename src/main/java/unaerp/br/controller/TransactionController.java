@@ -36,6 +36,10 @@ public class TransactionController {
             return false;
         }
 
+        if (category.getTransactionType() != transactionType) {
+            return false;
+        }
+
         Transaction newTransaction = new Transaction(description, amount, transactionType, date, category, currentUser);
         try {
             transactionDao.save(newTransaction);
@@ -46,7 +50,7 @@ public class TransactionController {
         }
     }
 
-    public boolean updateTransaction(Long transactionId, String description, BigDecimal amount, LocalDate date, Category category, User currentUser) {
+    public boolean updateTransaction(Long transactionId, String description, BigDecimal amount, TransactionType transactionType, LocalDate date, Category category, User currentUser) {
         if (transactionId == null || description == null || description.trim().isEmpty() || amount == null || date == null || category == null || currentUser == null) {
             return false;
         }
@@ -56,7 +60,7 @@ public class TransactionController {
             return false;
         }
 
-        if (!category.getUser().getId().equals(currentUser.getId())) {
+        if (!category.getUser().getId().equals(currentUser.getId()) || category.getTransactionType() != transactionType) {
             return false;
         }
 
@@ -65,6 +69,7 @@ public class TransactionController {
         transaction.setAmount(amount);
         transaction.setTransactionDate(date);
         transaction.setCategory(category);
+        transaction.setTransactionType(transactionType);
 
         try {
             transactionDao.update(transaction);
@@ -114,18 +119,6 @@ public class TransactionController {
             return transactionDao.findByUserAndDateRange(currentUser, startDate, endDate);
         } catch (Exception e) {
             System.err.println("Erro ao buscar transações por período para o usuário " + currentUser.getUsername() + ": " + e.getMessage());
-            return Collections.emptyList();
-        }
-    }
-
-    public List<Transaction> getTransactionsByUserAndCategory(User currentUser, Category category) {
-        if (currentUser == null || category == null) {
-            return Collections.emptyList();
-        }
-        try {
-            return transactionDao.findByUserAndCategory(currentUser, category);
-        } catch (Exception e) {
-            System.err.println("Erro ao buscar transações por categoria para o usuário " + currentUser.getUsername() + ": " + e.getMessage());
             return Collections.emptyList();
         }
     }
